@@ -14,56 +14,42 @@
 
 ---
 
-## 👥 4-Member Team Architecture
+## 🖥️ Application Architecture
 
-| Member | Focus Area | Core Responsibilities |
-|---|---|---|
-| **Member 1** | **Core Domain & Security** | `User`, `Role`, `UserStatus`, PBKDF2 Password Hashing, `UserService`, `AuthenticationService`, `UserRepository` |
-| **Member 2** | **Ticket Management** | `Ticket`, `Category`, `TicketStatus`, `TicketService`, `TicketRepository`, Lifecycle State Transitions |
-| **Member 3** | **Assignment & SLA** | `Priority`, `AssignmentService`, `SLAService`, `PriorityService`, Workload Tracking, SLA Boundary Metrics |
-| **Member 4** | **QA & Reporting** | `ReportService`, `NotificationService`, `FeedbackService`, `TestingCenterService`, Integration Tests, Regression Tests, `FixFlowApp` UI, Guided Presentation Mode |
+FixFlow is a native **JavaFX Desktop Application** backed by clean Domain-Driven Design (DDD) service and in-memory repository layers:
 
----
-
-## 🚀 Key Features
-
-1. **DEPI Official Splash & Project Presentation Intro**:
-   - Clean professional splash screen introducing supervision, team members, mission, and software testing philosophy.
-2. **Role-Based Interactive Dashboards**:
-   - **USER Dashboard**: Create Incident Report, View My Tickets, Inspect Ticket details with timeline & SLA panel, View Notifications, Submit Feedback, View Reports, Profile & Settings.
-   - **ADMIN Dashboard**: Operational KPIs overview, View All Tickets with filtering, Inspect Ticket, Assign Technician, SLA Compliance Monitoring, View Users directory, Executive Analytics, Testing Center.
-   - **TECHNICIAN Dashboard**: Assigned Work Queue, Start Work (`IN_PROGRESS`), Resolve with Notes (`RESOLVED`), View Notifications.
-3. **Interactive QA Testing Center**:
-   - Live automated test suite execution (All Tests, User, Auth, Ticket, Assignment, Priority, SLA, Validation, Integration, Regression).
-   - **10 Real Executable Negative Scenarios** with live service execution.
-   - Boundary Value Analysis (BVA) & Equivalence Partitioning (EP) QA matrix viewer.
-   - Representative QA Test Cases Viewer (`TC-001` through `TC-008`).
-4. **Guided Presentation Mode (11 Steps)**:
-   - Live 11-step interactive presentation walkthrough for defense and grading.
-5. **Controlled Ticket Lifecycle & State Machine**:
-   - Strict valid flow: `OPEN` ➔ `ASSIGNED` ➔ `IN_PROGRESS` ➔ `RESOLVED` ➔ `CLOSED`.
-   - Rejection of invalid transitions (e.g. `CLOSED` ➔ `OPEN`, `OPEN` ➔ `CLOSED`).
-6. **Automated Priority & SLA Engine**:
-   - Exact SLA Target Windows:
-     - `CRITICAL`: **2 hours**
-     - `HIGH`: **8 hours**
-     - `MEDIUM`: **24 hours**
-     - `LOW`: **72 hours**
-   - Precise SLA status tracking: `MET`, `VIOLATED`, `PENDING`.
-7. **Technician Assignment & Workload Balancing**:
-   - Validates technician existence, `Role.TECHNICIAN`, and `ACTIVE` account status.
-8. **In-System Event Notifications & User Feedback**:
-   - Real-time event notifications for users and technicians.
-   - 1–5 star ratings and comments on completed tickets.
-9. **Executive Health & Analytics Reports**:
-   - Visual ASCII distribution charts, SLA compliance percentage, average resolution duration, breakdowns by category and technician.
+```text
+    JavaFX Desktop GUI (OpenJFX 21)
+                ↓
+        Application Services
+    (User, Ticket, SLA, Assignment, Notification, Feedback, Report, TestingCenter)
+                ↓
+    Thread-Safe In-Memory Repositories (Defensive Copying)
+                ↓
+        Domain Entity Models
+```
 
 ---
 
-## 🛠️ Technology Stack
-- **Language**: Java 21 LTS
-- **Testing Framework**: JUnit 5 (Jupiter 5.10.2) + Parameterized Tests
-- **Architecture**: Clean Architecture, Domain-Driven Design (DDD), Thread-Safe In-Memory Repositories with Defensive Copying
+## 🚀 Key GUI Desktop Features
+
+1. **DEPI Official Welcome & Splash Screen**:
+   - Executive title screen introducing DEPI supervision, team members, mission, and Software Testing foundation.
+2. **Interactive Authentication & Registration**:
+   - Clean login card with quick-fill credentials for demo personas (`admin`, `tech_bob`, `john_user`).
+   - Validated registration modal enforcing username, email, and password complexity constraints.
+3. **Master Application Shell & Sidebar Navigation**:
+   - Left sidebar with real-time user status, online indicator, and instant view switching:
+     - **Dashboard Overview**: Role-tailored metrics and KPI summaries.
+     - **Ticket Directory**: Multi-criteria filters (Status, Priority, Category), full-text search, and double-click inspection.
+     - **Incident Creation**: Validated modal form.
+     - **Detailed Ticket Inspection**: SLA performance metrics, lifecycle timeline, resolution notes, feedback ratings, and role actions (Assign Technician, Start Work, Resolve Ticket, Close Ticket, Submit Feedback).
+     - **Technician Workbench**: Active assignments queue, urgent incident alerts, and quick actions.
+     - **SLA Real-time Monitoring**: Multi-tier deadline surveillance (2h / 8h / 24h / 72h), elapsed and remaining time gauges, live `[MET]`, `[AT RISK]`, `[VIOLATED]` indicators.
+     - **Executive Reports & Analytics**: Interactive JavaFX `PieChart` and `BarChart` visualizations for statuses, categories, and technician workloads.
+     - **Notification Center**: In-system notifications with type badges and mark-as-read functionality.
+     - **QA & Software Testing Center**: Testing summary (199 Tests, 100% Pass Rate), live executable 10 real negative scenarios runner, methodology breakdown, and Test Case Explorer (`TC-001` through `TC-008`).
+     - **Profile & System Settings**: Account parameters and runtime environment info.
 
 ---
 
@@ -81,39 +67,29 @@
 
 ## 💻 How to Run the Application
 
-### 1. Run the Interactive Console Application:
+### 1. Launch the JavaFX Desktop GUI Application:
 ```bash
-java -cp target/classes com.fixflow.ui.FixFlowApp
+mvn javafx:run
+```
+*Or using the Java runtime:*
+```bash
+java -cp "target/classes;target/dependency/*" com.fixflow.ui.gui.FixFlowDesktopApp
 ```
 
-### 2. Run the Automated 15-Step Live Demonstration:
+### 2. Run the Automated 15-Step Live Console Demonstration:
 ```bash
 java -cp target/classes com.fixflow.ui.FixFlowApp --demo
 ```
 
----
-
-## 🧪 How to Run Automated Tests (199 Tests)
-
-### Running with Maven:
+### 3. Run the Full Automated Test Suite (199 Tests):
 ```bash
 mvn clean test
 ```
 
-### Running with JUnit 5 Standalone Runner:
-```powershell
-javac -d target/classes (Get-ChildItem -Path src/main/java -Filter *.java -Recurse | Select-Object -ExpandProperty FullName)
-javac -cp "target/classes;lib/junit-platform-console-standalone-1.10.2.jar" -d target/test-classes (Get-ChildItem -Path src/test/java -Filter *.java -Recurse | Select-Object -ExpandProperty FullName)
-java -jar lib/junit-platform-console-standalone-1.10.2.jar execute --class-path "target/classes;target/test-classes" --scan-class-path --details=summary
-```
-
 ### Test Suite Execution Status:
 ```text
-[       199 tests found           ]
-[         0 tests skipped         ]
-[       199 tests started         ]
-[         0 tests aborted         ]
-[       199 tests successful      ]
-[         0 tests failed          ]
+[INFO] Results:
+[INFO] Tests run: 199, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
 ```
 **Pass Rate: 100% (199 / 199 Passed, 0 Failures, 0 Errors, 0 Skipped)**

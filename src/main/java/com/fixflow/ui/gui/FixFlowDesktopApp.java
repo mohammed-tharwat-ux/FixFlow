@@ -84,6 +84,12 @@ public class FixFlowDesktopApp extends Application {
         this.primaryStage.setMinWidth(1000);
         this.primaryStage.setMinHeight(700);
 
+        // Set Application Window Icon (Title Bar & Taskbar)
+        javafx.scene.image.Image appIcon = FixFlowThemeFx.getBrandLogoImage();
+        if (appIcon != null && !appIcon.isError()) {
+            this.primaryStage.getIcons().add(appIcon);
+        }
+
         rootPane = new StackPane();
         mainScene = new Scene(rootPane, 1200, 800);
 

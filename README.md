@@ -1,7 +1,16 @@
 # FixFlow — Smart Maintenance & Incident Management System
-## Interactive Application + QA Testing Center & Dashboard
+## Digital Egypt Pioneers Initiative (DEPI)
+### Ministry of Communications and Information Technology (MCIT)
 
-**FixFlow** is an enterprise-grade, clean-architecture Java application designed for reporting, tracking, assigning, resolving, and reporting facilities and IT maintenance incidents with automated SLA tracking, feedback, in-system notifications, and a dedicated **Interactive QA Testing Center**.
+---
+
+## 🏛️ Project Supervision & Team
+- **Under the Supervision of**: Team Dr/ Hacker — **Dr / Mina S. Younan**
+- **Presented by (Team Dr/ Hacker)**:
+  - Mohamed Tharwat
+  - Mariam Samy
+  - Shahd Moaz
+  - Salah Reda
 
 ---
 
@@ -12,38 +21,42 @@
 | **Member 1** | **Core Domain & Security** | `User`, `Role`, `UserStatus`, PBKDF2 Password Hashing, `UserService`, `AuthenticationService`, `UserRepository` |
 | **Member 2** | **Ticket Management** | `Ticket`, `Category`, `TicketStatus`, `TicketService`, `TicketRepository`, Lifecycle State Transitions |
 | **Member 3** | **Assignment & SLA** | `Priority`, `AssignmentService`, `SLAService`, `PriorityService`, Workload Tracking, SLA Boundary Metrics |
-| **Member 4** | **QA & Reporting** | `ReportService`, `NotificationService`, `FeedbackService`, `TestingCenterService`, Integration Tests, Regression Tests, `FixFlowApp` UI |
+| **Member 4** | **QA & Reporting** | `ReportService`, `NotificationService`, `FeedbackService`, `TestingCenterService`, Integration Tests, Regression Tests, `FixFlowApp` UI, Guided Presentation Mode |
 
 ---
 
 ## 🚀 Key Features
 
-1. **Role-Based Interactive Dashboards**:
-   - **USER Dashboard**: Create Ticket, View Tickets, View Notifications, Submit Feedback, View Reports, Logout.
-   - **ADMIN Dashboard**: View All Tickets, Assign Technician, View Users, View Reports, Testing Center, Logout.
-   - **TECHNICIAN Dashboard**: View Assigned Tickets, Start Ticket (`IN_PROGRESS`), Resolve Ticket (`RESOLVED` + Notes), View Notifications, Logout.
-2. **Interactive QA Testing Center**:
+1. **DEPI Official Splash & Project Presentation Intro**:
+   - Clean professional splash screen introducing supervision, team members, mission, and software testing philosophy.
+2. **Role-Based Interactive Dashboards**:
+   - **USER Dashboard**: Create Incident Report, View My Tickets, Inspect Ticket details with timeline & SLA panel, View Notifications, Submit Feedback, View Reports, Profile & Settings.
+   - **ADMIN Dashboard**: Operational KPIs overview, View All Tickets with filtering, Inspect Ticket, Assign Technician, SLA Compliance Monitoring, View Users directory, Executive Analytics, Testing Center.
+   - **TECHNICIAN Dashboard**: Assigned Work Queue, Start Work (`IN_PROGRESS`), Resolve with Notes (`RESOLVED`), View Notifications.
+3. **Interactive QA Testing Center**:
    - Live automated test suite execution (All Tests, User, Auth, Ticket, Assignment, Priority, SLA, Validation, Integration, Regression).
-   - **10 Real Executable Negative Scenarios** with real service validation.
+   - **10 Real Executable Negative Scenarios** with live service execution.
    - Boundary Value Analysis (BVA) & Equivalence Partitioning (EP) QA matrix viewer.
    - Representative QA Test Cases Viewer (`TC-001` through `TC-008`).
-3. **Controlled Ticket Lifecycle & State Machine**:
+4. **Guided Presentation Mode (11 Steps)**:
+   - Live 11-step interactive presentation walkthrough for defense and grading.
+5. **Controlled Ticket Lifecycle & State Machine**:
    - Strict valid flow: `OPEN` ➔ `ASSIGNED` ➔ `IN_PROGRESS` ➔ `RESOLVED` ➔ `CLOSED`.
    - Rejection of invalid transitions (e.g. `CLOSED` ➔ `OPEN`, `OPEN` ➔ `CLOSED`).
-4. **Automated Priority & SLA Engine**:
+6. **Automated Priority & SLA Engine**:
    - Exact SLA Target Windows:
      - `CRITICAL`: **2 hours**
      - `HIGH`: **8 hours**
      - `MEDIUM`: **24 hours**
      - `LOW`: **72 hours**
    - Precise SLA status tracking: `MET`, `VIOLATED`, `PENDING`.
-5. **Technician Assignment & Workload Balancing**:
+7. **Technician Assignment & Workload Balancing**:
    - Validates technician existence, `Role.TECHNICIAN`, and `ACTIVE` account status.
-6. **In-System Event Notifications & User Feedback**:
+8. **In-System Event Notifications & User Feedback**:
    - Real-time event notifications for users and technicians.
    - 1–5 star ratings and comments on completed tickets.
-7. **Executive Health & Analytics Reports**:
-   - SLA compliance percentage, average resolution duration, breakdowns by category and technician.
+9. **Executive Health & Analytics Reports**:
+   - Visual ASCII distribution charts, SLA compliance percentage, average resolution duration, breakdowns by category and technician.
 
 ---
 
@@ -80,7 +93,7 @@ java -cp target/classes com.fixflow.ui.FixFlowApp --demo
 
 ---
 
-## 🧪 How to Run Automated Tests (195 Tests)
+## 🧪 How to Run Automated Tests (199 Tests)
 
 ### Running with Maven:
 ```bash
@@ -96,11 +109,11 @@ java -jar lib/junit-platform-console-standalone-1.10.2.jar execute --class-path 
 
 ### Test Suite Execution Status:
 ```text
-[       195 tests found           ]
+[       199 tests found           ]
 [         0 tests skipped         ]
-[       195 tests started         ]
+[       199 tests started         ]
 [         0 tests aborted         ]
-[       195 tests successful      ]
+[       199 tests successful      ]
 [         0 tests failed          ]
 ```
-**Pass Rate: 100% (195 / 195 Passed, 0 Failures, 0 Errors, 0 Skipped)**
+**Pass Rate: 100% (199 / 199 Passed, 0 Failures, 0 Errors, 0 Skipped)**

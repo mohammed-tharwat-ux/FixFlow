@@ -18,7 +18,6 @@ import com.fixflow.model.SystemSummaryReport;
 import com.fixflow.model.Ticket;
 import com.fixflow.model.TicketStatus;
 import com.fixflow.model.User;
-import com.fixflow.qa.NegativeTestScenarioResult;
 import com.fixflow.qa.TestingCenterService;
 import com.fixflow.repository.FeedbackRepository;
 import com.fixflow.repository.InMemoryFeedbackRepository;
@@ -39,6 +38,13 @@ import com.fixflow.service.ReportService;
 import com.fixflow.service.SLAService;
 import com.fixflow.service.TicketService;
 import com.fixflow.service.UserService;
+import com.fixflow.ui.views.DashboardView;
+import com.fixflow.ui.views.ProfileSettingsView;
+import com.fixflow.ui.views.ReportsAnalyticsView;
+import com.fixflow.ui.views.SlaMonitoringView;
+import com.fixflow.ui.views.TechnicianWorkspaceView;
+import com.fixflow.ui.views.TestingCenterView;
+import com.fixflow.ui.views.TicketView;
 import com.fixflow.validation.TicketValidator;
 import com.fixflow.validation.UserValidator;
 
@@ -47,7 +53,7 @@ import java.util.List;
 import java.util.Scanner;
 
 /**
- * Main Application Console UI, Role-Based Dashboards, Testing Center, and Demo Runner for FixFlow.
+ * Main Application Shell, Unified Navigation, Presentation Runner, and Demo Dispatcher for FixFlow.
  */
 public class FixFlowApp {
 
@@ -61,6 +67,16 @@ public class FixFlowApp {
     private final FeedbackService feedbackService;
     private final ReportService reportService;
     private final TestingCenterService testingCenterService;
+
+    // View Components
+    private final DashboardView dashboardView;
+    private final TicketView ticketView;
+    private final TechnicianWorkspaceView techWorkspaceView;
+    private final SlaMonitoringView slaMonitoringView;
+    private final ReportsAnalyticsView reportsAnalyticsView;
+    private final TestingCenterView testingCenterView;
+    private final ProfileSettingsView profileSettingsView;
+    private final PresentationMode presentationMode;
 
     private User currentUser = null;
     private final Scanner scanner;
@@ -88,7 +104,16 @@ public class FixFlowApp {
         this.reportService = new ReportService(ticketRepository, slaService);
         this.testingCenterService = new TestingCenterService();
 
-        // Preload standard realistic demo data
+        this.dashboardView = new DashboardView(ticketService, userService, assignmentService, reportService, slaService);
+        this.ticketView = new TicketView(ticketService, slaService, feedbackService, notificationService);
+        this.techWorkspaceView = new TechnicianWorkspaceView(ticketService, slaService);
+        this.slaMonitoringView = new SlaMonitoringView(ticketService, slaService);
+        this.reportsAnalyticsView = new ReportsAnalyticsView(reportService, ticketService);
+        this.testingCenterView = new TestingCenterView(testingCenterService);
+        this.profileSettingsView = new ProfileSettingsView();
+        this.presentationMode = new PresentationMode(userService, authService, ticketService, assignmentService, slaService, notificationService, feedbackService, reportService);
+
+        // Preload demo seed data
         DemoDataLoader.loadDemoData(userService, ticketService, assignmentService, slaService);
     }
 
@@ -103,12 +128,13 @@ public class FixFlowApp {
         if (System.console() == null && args.length == 0) {
             app.runAutomatedDemoScenario();
         } else {
+            PresentationIntro.displaySplashScreen(app.scanner);
             app.runMainLoop();
         }
     }
 
     // =========================================================================
-    // MAIN INTERACTIVE APPLICATION LOOP
+    // MAIN APPLICATION NAVIGATION LOOP
     // =========================================================================
 
     public void runMainLoop() {
@@ -116,40 +142,39 @@ public class FixFlowApp {
         while (running) {
             if (currentUser == null) {
                 printMainMenuHeader();
-                System.out.println("1. Login");
-                System.out.println("2. Register New User");
-                System.out.println("3. Testing Center");
-                System.out.println("4. Run Full Demo");
-                System.out.println("5. Exit");
-                System.out.print("\nSelect an option: ");
+                System.out.println("  1. Login to FixFlow Account");
+                System.out.println("  2. Register New User Account");
+                System.out.println("  3. QA & Software Testing Center");
+                System.out.println("  4. Guided Presentation Mode (11 Steps)");
+                System.out.println("  5. Run Full Automated Demo (--demo)");
+                System.out.println("  6. Exit");
+                System.out.print("\n  Select an option (1-6): ");
                 String choice = readInput();
 
                 switch (choice) {
                     case "1" -> handleLogin();
                     case "2" -> handleRegistration();
-                    case "3" -> openTestingCenter();
-                    case "4" -> runAutomatedDemoScenario();
-                    case "5" -> {
-                        System.out.println("\nThank you for using FixFlow. Goodbye!");
+                    case "3" -> testingCenterView.renderMenu(scanner);
+                    case "4" -> presentationMode.runGuidedPresentation(scanner);
+                    case "5" -> runAutomatedDemoScenario();
+                    case "6" -> {
+                        System.out.println("\n  Thank you for using FixFlow. Session terminated.");
                         running = false;
                     }
-                    default -> System.out.println("\n[ERROR] Invalid option. Please enter a number from 1 to 5.");
+                    default -> System.out.println("\n  [ERROR] Invalid option. Please enter a number from 1 to 6.");
                 }
             } else {
                 switch (currentUser.getRole()) {
-                    case USER -> runUserDashboard();
-                    case ADMIN -> runAdminDashboard();
-                    case TECHNICIAN -> runTechnicianDashboard();
+                    case USER -> runUserShell();
+                    case ADMIN -> runAdminShell();
+                    case TECHNICIAN -> runTechnicianShell();
                 }
             }
         }
     }
 
     private void printMainMenuHeader() {
-        System.out.println("\n========================================");
-        System.out.println("              FIXFLOW                   ");
-        System.out.println("     SMART MAINTENANCE SYSTEM           ");
-        System.out.println("========================================");
+        ConsoleTheme.printHeader("FIXFLOW - SMART MAINTENANCE SYSTEM");
     }
 
     // =========================================================================
@@ -157,154 +182,160 @@ public class FixFlowApp {
     // =========================================================================
 
     private void handleLogin() {
-        System.out.println("\n----------------------------------------");
-        System.out.println("                LOGIN                   ");
-        System.out.println("----------------------------------------");
-        System.out.print("Username: ");
+        ConsoleTheme.printSection("USER AUTHENTICATION");
+        System.out.print("  Username: ");
         String username = readInput();
-        System.out.print("Password: ");
+        System.out.print("  Password: ");
         String password = readInput();
 
         try {
             currentUser = authService.login(username, password);
-            System.out.println("\n[SUCCESS] Login successful. Welcome, " + currentUser.getFullName() + " (" + currentUser.getRole() + ")!");
+            System.out.printf("\n  [SUCCESS] Authenticated successfully as: %s [%s]\n",
+                    currentUser.getFullName(), currentUser.getRole());
         } catch (AuthenticationException e) {
-            System.out.println("\n[FAILED] Login failed:\n" + e.getMessage());
+            System.out.println("\n  [FAILED] Login failed:\n  " + e.getMessage());
         } catch (Exception e) {
-            System.out.println("\n[ERROR] An error occurred during login: " + e.getMessage());
+            System.out.println("\n  [ERROR] Login encountered an issue: " + e.getMessage());
         }
     }
 
     private void handleRegistration() {
-        System.out.println("\n----------------------------------------");
-        System.out.println("          REGISTER NEW USER             ");
-        System.out.println("----------------------------------------");
-        System.out.print("Full Name: ");
+        ConsoleTheme.printSection("CREATE NEW USER ACCOUNT");
+        System.out.print("  Full Name: ");
         String fullName = readInput();
-        System.out.print("Username: ");
+        System.out.print("  Username:  ");
         String username = readInput();
-        System.out.print("Email: ");
+        System.out.print("  Email:     ");
         String email = readInput();
-        System.out.print("Password: ");
+        System.out.print("  Password:  ");
         String password = readInput();
 
         try {
             User registered = userService.registerUser(fullName, username, email, password, Role.USER);
-            System.out.println("\n[SUCCESS] Registration successful!");
-            System.out.println("Account created for '" + registered.getUsername() + "' with User ID #" + registered.getId());
-            System.out.println("You can now log in using your credentials.");
+            System.out.println("\n  [SUCCESS] Account successfully registered!");
+            System.out.printf("  User ID: #%d | Username: %s | Role: %s\n",
+                    registered.getId(), registered.getUsername(), registered.getRole());
+            System.out.println("  You can now login using your credentials.");
         } catch (ValidationException e) {
-            System.out.println("\n[FAILED] Registration failed:\nValidation Error: " + e.getMessage());
+            System.out.println("\n  [FAILED] Registration Validation Error:\n  " + e.getMessage());
         } catch (UserAlreadyExistsException e) {
-            System.out.println("\n[FAILED] Registration failed:\n" + e.getMessage());
+            System.out.println("\n  [FAILED] Registration Conflict:\n  " + e.getMessage());
         } catch (Exception e) {
-            System.out.println("\n[ERROR] Registration encountered an unexpected error: " + e.getMessage());
+            System.out.println("\n  [ERROR] Registration error: " + e.getMessage());
         }
     }
 
     // =========================================================================
-    // ROLE-BASED DASHBOARDS
+    // ROLE APPLICATION SHELLS
     // =========================================================================
 
-    private void runUserDashboard() {
-        System.out.println("\n========================================");
-        System.out.println("             USER DASHBOARD             ");
-        System.out.println("========================================");
-        System.out.println("Logged in as: " + currentUser.getFullName() + " [USER]");
-        System.out.println("1. Create Ticket");
-        System.out.println("2. View Tickets");
-        System.out.println("3. View Notifications");
-        System.out.println("4. Submit Feedback");
-        System.out.println("5. View Reports");
-        System.out.println("6. Logout");
-        System.out.print("\nSelect an option: ");
+    private void runUserShell() {
+        ConsoleTheme.printAppShell(currentUser, "User Portal");
+        System.out.println("  1. Dashboard Overview");
+        System.out.println("  2. Create Maintenance Request");
+        System.out.println("  3. View My Submitted Tickets");
+        System.out.println("  4. Inspect Ticket by ID");
+        System.out.println("  5. View In-System Notifications");
+        System.out.println("  6. Submit Satisfaction Feedback");
+        System.out.println("  7. View Analytics & Reports");
+        System.out.println("  8. Profile & Account Settings");
+        System.out.println("  9. Logout");
+        System.out.print("\n  Select an option (1-9): ");
         String choice = readInput();
 
         switch (choice) {
-            case "1" -> handleCreateTicket();
-            case "2" -> handleViewUserTickets();
-            case "3" -> handleViewNotifications();
-            case "4" -> handleSubmitFeedback();
-            case "5" -> handleViewReports();
-            case "6" -> {
-                System.out.println("\nLogged out successfully.");
+            case "1" -> dashboardView.render(currentUser);
+            case "2" -> handleCreateTicketPrompt();
+            case "3" -> ticketView.renderTicketList(ticketService.getTicketsByReporter(currentUser.getId()), "My Reported Tickets");
+            case "4" -> handleInspectTicketPrompt();
+            case "5" -> handleViewNotifications();
+            case "6" -> handleSubmitFeedbackPrompt();
+            case "7" -> reportsAnalyticsView.render(currentUser);
+            case "8" -> handleProfileAndSettings();
+            case "9" -> {
+                System.out.println("\n  Logged out successfully.");
                 currentUser = null;
             }
-            default -> System.out.println("\n[ERROR] Invalid option. Please choose 1-6.");
+            default -> System.out.println("\n  [ERROR] Invalid option. Please select 1-9.");
         }
     }
 
-    private void runAdminDashboard() {
-        System.out.println("\n========================================");
-        System.out.println("            ADMIN DASHBOARD             ");
-        System.out.println("========================================");
-        System.out.println("Logged in as: " + currentUser.getFullName() + " [ADMIN]");
-        System.out.println("1. View All Tickets");
-        System.out.println("2. Assign Technician");
-        System.out.println("3. View Users");
-        System.out.println("4. View Reports");
-        System.out.println("5. Testing Center");
-        System.out.println("6. Logout");
-        System.out.print("\nSelect an option: ");
+    private void runAdminShell() {
+        ConsoleTheme.printAppShell(currentUser, "Administrator Operations Center");
+        System.out.println("  1. Dashboard Overview & KPIs");
+        System.out.println("  2. View All Maintenance Tickets");
+        System.out.println("  3. Inspect Ticket by ID");
+        System.out.println("  4. Assign Technician to Ticket");
+        System.out.println("  5. SLA Compliance Monitoring");
+        System.out.println("  6. Directory of Registered Users");
+        System.out.println("  7. Executive Reports & Analytics");
+        System.out.println("  8. QA & Software Testing Center");
+        System.out.println("  9. Profile & System Settings");
+        System.out.println(" 10. Logout");
+        System.out.print("\n  Select an option (1-10): ");
         String choice = readInput();
 
         switch (choice) {
-            case "1" -> handleViewAllTickets();
-            case "2" -> handleAssignTechnician();
-            case "3" -> handleViewUsers();
-            case "4" -> handleViewReports();
-            case "5" -> openTestingCenter();
-            case "6" -> {
-                System.out.println("\nLogged out successfully.");
+            case "1" -> dashboardView.render(currentUser);
+            case "2" -> ticketView.renderTicketList(ticketService.listAllTickets(), "All System Incidents");
+            case "3" -> handleInspectTicketPrompt();
+            case "4" -> handleAssignTechnicianPrompt();
+            case "5" -> slaMonitoringView.render(currentUser);
+            case "6" -> handleViewUsers();
+            case "7" -> reportsAnalyticsView.render(currentUser);
+            case "8" -> testingCenterView.renderMenu(scanner);
+            case "9" -> handleProfileAndSettings();
+            case "10" -> {
+                System.out.println("\n  Logged out successfully.");
                 currentUser = null;
             }
-            default -> System.out.println("\n[ERROR] Invalid option. Please choose 1-6.");
+            default -> System.out.println("\n  [ERROR] Invalid option. Please select 1-10.");
         }
     }
 
-    private void runTechnicianDashboard() {
-        System.out.println("\n========================================");
-        System.out.println("         TECHNICIAN DASHBOARD           ");
-        System.out.println("========================================");
-        System.out.println("Logged in as: " + currentUser.getFullName() + " [TECHNICIAN]");
-        System.out.println("1. View Assigned Tickets");
-        System.out.println("2. Start Ticket");
-        System.out.println("3. Resolve Ticket");
-        System.out.println("4. View Notifications");
-        System.out.println("5. Logout");
-        System.out.print("\nSelect an option: ");
+    private void runTechnicianShell() {
+        ConsoleTheme.printAppShell(currentUser, "Technician Incident Workbench");
+        System.out.println("  1. Dashboard Overview");
+        System.out.println("  2. My Assigned Work Queue");
+        System.out.println("  3. Inspect Ticket by ID");
+        System.out.println("  4. Start Work on Ticket (IN_PROGRESS)");
+        System.out.println("  5. Resolve Ticket with Notes (RESOLVED)");
+        System.out.println("  6. View In-System Notifications");
+        System.out.println("  7. Profile & Settings");
+        System.out.println("  8. Logout");
+        System.out.print("\n  Select an option (1-8): ");
         String choice = readInput();
 
         switch (choice) {
-            case "1" -> handleViewTechnicianTickets();
-            case "2" -> handleStartTicket();
-            case "3" -> handleResolveTicket();
-            case "4" -> handleViewNotifications();
-            case "5" -> {
-                System.out.println("\nLogged out successfully.");
+            case "1" -> dashboardView.render(currentUser);
+            case "2" -> techWorkspaceView.renderWorkspace(currentUser);
+            case "3" -> handleInspectTicketPrompt();
+            case "4" -> handleStartTicketPrompt();
+            case "5" -> handleResolveTicketPrompt();
+            case "6" -> handleViewNotifications();
+            case "7" -> handleProfileAndSettings();
+            case "8" -> {
+                System.out.println("\n  Logged out successfully.");
                 currentUser = null;
             }
-            default -> System.out.println("\n[ERROR] Invalid option. Please choose 1-5.");
+            default -> System.out.println("\n  [ERROR] Invalid option. Please select 1-8.");
         }
     }
 
     // =========================================================================
-    // TICKET & SYSTEM HANDLERS
+    // ACTION HANDLERS
     // =========================================================================
 
-    private void handleCreateTicket() {
-        System.out.println("\n----------------------------------------");
-        System.out.println("         CREATE MAINTENANCE TICKET      ");
-        System.out.println("----------------------------------------");
-        System.out.print("Title: ");
+    private void handleCreateTicketPrompt() {
+        ConsoleTheme.printSection("CREATE MAINTENANCE INCIDENT REPORT");
+        System.out.print("  Title:       ");
         String title = readInput();
-        System.out.print("Description: ");
+        System.out.print("  Description: ");
         String desc = readInput();
-        System.out.print("Location: ");
+        System.out.print("  Location:    ");
         String loc = readInput();
-        System.out.println("Select Category:");
-        System.out.println("1. HARDWARE  2. SOFTWARE  3. NETWORK  4. ELECTRICAL  5. FACILITY  6. OTHER");
-        System.out.print("Choice (1-6): ");
+        System.out.println("  Select Category: 1.HARDWARE 2.SOFTWARE 3.NETWORK 4.ELECTRICAL 5.FACILITY 6.OTHER");
+        System.out.print("  Choice (1-6): ");
         String catInput = readInput();
 
         int catIdx = 0;
@@ -312,335 +343,171 @@ public class FixFlowApp {
             catIdx = Integer.parseInt(catInput) - 1;
         } catch (NumberFormatException ignored) {
         }
-        if (catIdx < 0 || catIdx >= Category.values().length) {
-            catIdx = 0;
-        }
+        if (catIdx < 0 || catIdx >= Category.values().length) catIdx = 0;
         Category category = Category.values()[catIdx];
 
         try {
             Ticket ticket = ticketService.createTicket(currentUser.getId(), title, desc, category, loc, null);
-            System.out.println("\n[SUCCESS] Ticket Created Successfully!");
-            System.out.println("Ticket ID: #" + ticket.getId() + " | Priority Assigned: " + ticket.getPriority() + " | Status: " + ticket.getStatus());
+            System.out.println("\n  [SUCCESS] Maintenance Ticket Submitted!");
+            System.out.printf("  Ticket #%d | Priority: %s | Status: %s | Target SLA: %d Hours\n",
+                    ticket.getId(), ticket.getPriority(), ticket.getStatus(), slaService.getSlaTargetDuration(ticket.getPriority()).toHours());
         } catch (ValidationException e) {
-            System.out.println("\n[FAILED] Validation Error: " + e.getMessage());
+            System.out.println("\n  [FAILED] Validation Error: " + e.getMessage());
         } catch (Exception e) {
-            System.out.println("\n[ERROR] Failed to create ticket: " + e.getMessage());
+            System.out.println("\n  [ERROR] Ticket creation error: " + e.getMessage());
         }
     }
 
-    private void handleViewUserTickets() {
-        List<Ticket> tickets = ticketService.getTicketsByReporter(currentUser.getId());
-        System.out.println("\n--- Your Submitted Tickets (" + tickets.size() + ") ---");
-        if (tickets.isEmpty()) {
-            System.out.println("No tickets submitted yet.");
+    private void handleInspectTicketPrompt() {
+        System.out.print("\n  Enter Ticket ID to inspect: ");
+        Long id = parseLongInput(readInput());
+        if (id == null) {
+            System.out.println("  [ERROR] Invalid ID format.");
             return;
         }
-        printTicketTable(tickets);
-    }
-
-    private void handleViewAllTickets() {
-        List<Ticket> tickets = ticketService.listAllTickets();
-        System.out.println("\n--- All System Maintenance Tickets (" + tickets.size() + ") ---");
-        printTicketTable(tickets);
-    }
-
-    private void handleViewTechnicianTickets() {
-        List<Ticket> tickets = ticketService.getTicketsByTechnician(currentUser.getId());
-        System.out.println("\n--- Your Assigned Maintenance Tickets (" + tickets.size() + ") ---");
-        if (tickets.isEmpty()) {
-            System.out.println("No tickets currently assigned to you.");
-            return;
-        }
-        printTicketTable(tickets);
-    }
-
-    private void printTicketTable(List<Ticket> tickets) {
-        System.out.printf("%-4s | %-12s | %-8s | %-10s | %-15s | %s\n", "ID", "STATUS", "PRIORITY", "CATEGORY", "TECHNICIAN", "TITLE");
-        System.out.println("--------------------------------------------------------------------------------------");
-        for (Ticket t : tickets) {
-            String tech = t.getAssignedTechnician() != null ? t.getAssignedTechnician().getUsername() : "Unassigned";
-            System.out.printf("#%-3d | %-12s | %-8s | %-10s | %-15s | %s\n",
-                    t.getId(), t.getStatus(), t.getPriority(), t.getCategory(), tech, t.getTitle());
+        try {
+            Ticket t = ticketService.getTicketById(id);
+            ticketView.renderDetailedTicketInspector(t);
+        } catch (TicketNotFoundException e) {
+            System.out.println("  [FAILED] " + e.getMessage());
         }
     }
 
-    private void handleAssignTechnician() {
-        System.out.println("\n----------------------------------------");
-        System.out.println("           ASSIGN TECHNICIAN            ");
-        System.out.println("----------------------------------------");
-        List<Ticket> unassigned = ticketService.listAllTickets().stream()
+    private void handleAssignTechnicianPrompt() {
+        ConsoleTheme.printSection("TECHNICIAN ASSIGNMENT");
+        List<Ticket> openTickets = ticketService.listAllTickets().stream()
                 .filter(t -> t.getStatus() == TicketStatus.OPEN)
                 .toList();
 
-        if (unassigned.isEmpty()) {
-            System.out.println("No OPEN tickets awaiting assignment.");
+        if (openTickets.isEmpty()) {
+            System.out.println("  No OPEN tickets currently awaiting assignment.");
             return;
         }
 
-        System.out.println("Open Tickets Awaiting Assignment:");
-        printTicketTable(unassigned);
+        System.out.println("  Open Incidents Awaiting Technician:");
+        ticketView.renderTicketList(openTickets, "Unassigned Open Tickets");
 
-        System.out.println("\nAvailable Active Technicians:");
+        System.out.println("\n  Available Active Technicians:");
         List<User> techs = assignmentService.getAvailableTechnicians();
         for (User u : techs) {
             long workload = assignmentService.getTechnicianActiveWorkload(u.getId());
-            System.out.println("  ID #" + u.getId() + " - " + u.getFullName() + " (" + u.getUsername() + ") | Active Workload: " + workload + " tickets");
+            System.out.printf("  - ID #%d : %-20s (%-12s) | Active Workload: %d tickets\n",
+                    u.getId(), u.getFullName(), u.getUsername(), workload);
         }
 
-        System.out.print("\nEnter Ticket ID to assign: ");
+        System.out.print("\n  Enter Ticket ID to assign: ");
         Long ticketId = parseLongInput(readInput());
-        System.out.print("Enter Technician ID: ");
+        System.out.print("  Enter Technician ID:       ");
         Long techId = parseLongInput(readInput());
 
         if (ticketId == null || techId == null) {
-            System.out.println("\n[ERROR] Invalid ID input.");
+            System.out.println("  [ERROR] Invalid ID inputs.");
             return;
         }
 
         try {
             Ticket assigned = assignmentService.assignTechnician(ticketId, techId, currentUser.getId());
-            System.out.println("\n[SUCCESS] Ticket #" + assigned.getId() + " successfully assigned to " + assigned.getAssignedTechnician().getFullName() + "!");
-        } catch (TicketNotFoundException | UserNotFoundException | InvalidTicketStatusException | ValidationException | UnauthorizedOperationException e) {
-            System.out.println("\n[FAILED] Assignment Failed: " + e.getMessage());
-        }
-    }
-
-    private void handleStartTicket() {
-        System.out.println("\n----------------------------------------");
-        System.out.println("             START TICKET               ");
-        System.out.println("----------------------------------------");
-        System.out.print("Enter Ticket ID to start work on: ");
-        Long ticketId = parseLongInput(readInput());
-        if (ticketId == null) {
-            System.out.println("\n[ERROR] Invalid Ticket ID.");
-            return;
-        }
-
-        try {
-            Ticket updated = ticketService.startProgress(ticketId, currentUser.getId());
-            System.out.println("\n[SUCCESS] Ticket #" + updated.getId() + " is now IN_PROGRESS!");
+            System.out.printf("\n  [SUCCESS] Ticket #%d assigned to %s. Status updated to %s.\n",
+                    assigned.getId(), assigned.getAssignedTechnician().getFullName(), assigned.getStatus());
         } catch (Exception e) {
-            System.out.println("\n[FAILED] " + e.getMessage());
+            System.out.println("\n  [FAILED] Assignment error: " + e.getMessage());
         }
     }
 
-    private void handleResolveTicket() {
-        System.out.println("\n----------------------------------------");
-        System.out.println("            RESOLVE TICKET              ");
-        System.out.println("----------------------------------------");
-        System.out.print("Enter Ticket ID to resolve: ");
-        Long ticketId = parseLongInput(readInput());
-        if (ticketId == null) {
-            System.out.println("\n[ERROR] Invalid Ticket ID.");
+    private void handleStartTicketPrompt() {
+        System.out.print("\n  Enter Ticket ID to begin work on: ");
+        Long id = parseLongInput(readInput());
+        if (id == null) {
+            System.out.println("  [ERROR] Invalid ID.");
             return;
         }
-        System.out.print("Enter Resolution Notes: ");
+        try {
+            Ticket t = ticketService.startProgress(id, currentUser.getId());
+            System.out.printf("  [SUCCESS] Ticket #%d status updated to %s.\n", t.getId(), t.getStatus());
+        } catch (Exception e) {
+            System.out.println("  [FAILED] " + e.getMessage());
+        }
+    }
+
+    private void handleResolveTicketPrompt() {
+        System.out.print("\n  Enter Ticket ID to resolve: ");
+        Long id = parseLongInput(readInput());
+        if (id == null) {
+            System.out.println("  [ERROR] Invalid ID.");
+            return;
+        }
+        System.out.print("  Enter Resolution Notes: ");
         String notes = readInput();
 
         try {
-            Ticket resolved = ticketService.resolveTicket(ticketId, currentUser.getId(), notes);
-            System.out.println("\n[SUCCESS] Ticket #" + resolved.getId() + " marked as RESOLVED!");
-            SlaStatus sla = slaService.calculateSlaStatus(resolved, null);
-            System.out.println("SLA Performance: " + sla + " (Window: " + slaService.getSlaTargetDuration(resolved.getPriority()).toHours() + "h)");
+            Ticket t = ticketService.resolveTicket(id, currentUser.getId(), notes);
+            System.out.printf("  [SUCCESS] Ticket #%d marked as %s.\n", t.getId(), t.getStatus());
+            SlaStatus sla = slaService.calculateSlaStatus(t, null);
+            System.out.printf("  SLA Compliance: %s (Window: %d Hours)\n",
+                    ConsoleTheme.formatSlaStatus(sla), slaService.getSlaTargetDuration(t.getPriority()).toHours());
         } catch (Exception e) {
-            System.out.println("\n[FAILED] " + e.getMessage());
+            System.out.println("  [FAILED] " + e.getMessage());
         }
     }
 
-    private void handleSubmitFeedback() {
-        System.out.println("\n----------------------------------------");
-        System.out.println("        SUBMIT USER FEEDBACK            ");
-        System.out.println("----------------------------------------");
-        System.out.print("Enter Resolved/Closed Ticket ID: ");
-        Long ticketId = parseLongInput(readInput());
-        if (ticketId == null) {
-            System.out.println("\n[ERROR] Invalid Ticket ID.");
+    private void handleSubmitFeedbackPrompt() {
+        ConsoleTheme.printSection("USER SATISFACTION FEEDBACK");
+        System.out.print("  Enter Resolved or Closed Ticket ID: ");
+        Long id = parseLongInput(readInput());
+        if (id == null) {
+            System.out.println("  [ERROR] Invalid ID.");
             return;
         }
 
-        System.out.print("Rating (1 to 5 stars): ");
+        System.out.print("  Rating (1 to 5 Stars): ");
         int rating = 5;
         try {
             rating = Integer.parseInt(readInput());
         } catch (NumberFormatException e) {
-            System.out.println("\n[ERROR] Rating must be an integer.");
+            System.out.println("  [ERROR] Rating must be an integer.");
             return;
         }
 
-        System.out.print("Comments: ");
-        String comment = readInput();
+        System.out.print("  Comments: ");
+        String comments = readInput();
 
         try {
-            Feedback f = feedbackService.submitFeedback(ticketId, currentUser.getId(), rating, comment);
-            System.out.println("\n[SUCCESS] Thank you for your feedback! Rating " + f.getRating() + "/5 recorded.");
+            Feedback f = feedbackService.submitFeedback(id, currentUser.getId(), rating, comments);
+            System.out.printf("\n  [SUCCESS] Thank you! Feedback rating %d/5 recorded for Ticket #%d.\n",
+                    f.getRating(), f.getTicketId());
         } catch (Exception e) {
-            System.out.println("\n[FAILED] " + e.getMessage());
+            System.out.println("\n  [FAILED] " + e.getMessage());
         }
     }
 
     private void handleViewUsers() {
+        ConsoleTheme.printSection("REGISTERED USER DIRECTORY");
         List<User> users = userService.listUsers();
-        System.out.println("\n--- System Registered Users (" + users.size() + ") ---");
-        System.out.printf("%-4s | %-15s | %-12s | %-20s | %-12s | %s\n", "ID", "USERNAME", "ROLE", "EMAIL", "STATUS", "FULL NAME");
-        System.out.println("----------------------------------------------------------------------------------------------");
+        System.out.printf("  %-4s | %-15s | %-12s | %-22s | %-10s | %s\n",
+                "ID", "USERNAME", "ROLE", "EMAIL", "STATUS", "FULL NAME");
+        System.out.println("  " + ConsoleTheme.DIVIDER_SINGLE);
         for (User u : users) {
-            System.out.printf("#%-3d | %-15s | %-12s | %-20s | %-12s | %s\n",
+            System.out.printf("  #%-3d | %-15s | %-12s | %-22s | %-10s | %s\n",
                     u.getId(), u.getUsername(), u.getRole(), u.getEmail(), u.getStatus(), u.getFullName());
         }
     }
 
     private void handleViewNotifications() {
+        ConsoleTheme.printSection("IN-SYSTEM NOTIFICATIONS");
         List<Notification> notes = notificationService.getUserNotifications(currentUser.getId());
-        System.out.println("\n--- Your In-System Notifications (" + notes.size() + ") ---");
         if (notes.isEmpty()) {
-            System.out.println("No notifications available.");
+            System.out.println("  No notifications.");
             return;
         }
         for (Notification n : notes) {
-            System.out.println("[" + (n.isRead() ? "READ" : "NEW") + "] " + n.getTitle() + " -> " + n.getMessage());
+            System.out.printf("  * [%-10s] %s -> %s\n", n.getType(), n.getTitle(), n.getMessage());
             notificationService.markAsRead(n.getId());
         }
     }
 
-    private void handleViewReports() {
-        SystemSummaryReport report = reportService.generateSummaryReport();
-        System.out.println("\n+-------------------------------------------------------------+");
-        System.out.println("|               EXECUTIVE SYSTEM SUMMARY REPORT               |");
-        System.out.println("+-------------------------------------------------------------+");
-        System.out.printf("| Total Tickets Managed:        %-29d |\n", report.totalTickets());
-        System.out.printf("| Open Tickets:                 %-29d |\n", report.openTickets());
-        System.out.printf("| Assigned Tickets:             %-29d |\n", report.assignedTickets());
-        System.out.printf("| In Progress Tickets:          %-29d |\n", report.inProgressTickets());
-        System.out.printf("| Resolved Tickets:             %-29d |\n", report.resolvedTickets());
-        System.out.printf("| Closed Tickets:               %-29d |\n", report.closedTickets());
-        System.out.printf("| Critical Priority Incidents:  %-29d |\n", report.criticalTickets());
-        System.out.printf("| SLA Compliance Rate:          %-26.2f%% |\n", report.slaComplianceRatePercentage());
-        System.out.printf("| Total SLA Violations:         %-29d |\n", report.slaViolations());
-        System.out.printf("| Average Resolution Time:      %-24.2f hrs |\n", report.averageResolutionTimeHours());
-        System.out.println("+-------------------------------------------------------------+");
-        System.out.println("| Breakdown by Category: " + report.ticketsByCategory());
-        System.out.println("| Breakdown by Technician: " + report.ticketsByTechnician());
-        System.out.println("+-------------------------------------------------------------+");
-    }
-
-    // =========================================================================
-    // TESTING CENTER
-    // =========================================================================
-
-    public void openTestingCenter() {
-        boolean inTestingCenter = true;
-        while (inTestingCenter) {
-            System.out.println("\n========================================");
-            System.out.println("          FIXFLOW TEST CENTER           ");
-            System.out.println("========================================");
-            System.out.println("1. Run All Automated Tests");
-            System.out.println("2. Run User Tests");
-            System.out.println("3. Run Authentication Tests");
-            System.out.println("4. Run Ticket Tests");
-            System.out.println("5. Run Assignment Tests");
-            System.out.println("6. Run Priority Tests");
-            System.out.println("7. Run SLA Tests");
-            System.out.println("8. Run Validation Tests");
-            System.out.println("9. Run Integration Tests");
-            System.out.println("10. Run Regression Tests");
-            System.out.println("11. Run Negative Test Scenarios");
-            System.out.println("12. View Testing Summary");
-            System.out.println("13. Back");
-            System.out.print("\nSelect an option: ");
-            String choice = readInput();
-
-            switch (choice) {
-                case "1" -> displaySuiteExecution("ALL AUTOMATED TESTS (193 Tests)", "mvn clean test", 193, "All unit, boundary, exception, security, and integration suites passed.");
-                case "2" -> displaySuiteExecution("USER MANAGEMENT TESTS", "mvn test -Dtest=UserServiceTest,UserRepositoryTest", 36, "Registration, lookup, activation, deactivation, deletion tested.");
-                case "3" -> displaySuiteExecution("AUTHENTICATION & SECURITY TESTS", "mvn test -Dtest=AuthenticationServiceTest,PasswordHasherTest", 16, "PBKDF2 HMAC-SHA256 hashing, salting, inactive account protection tested.");
-                case "4" -> displaySuiteExecution("TICKET MANAGEMENT TESTS", "mvn test -Dtest=TicketServiceTest,TicketValidatorTest", 38, "Ticket CRUD, state machine transitions, title/desc boundaries tested.");
-                case "5" -> displaySuiteExecution("ASSIGNMENT TESTS", "mvn test -Dtest=AssignmentServiceTest", 6, "Technician qualification, active account check, workload tracking tested.");
-                case "6" -> displaySuiteExecution("PRIORITY EVALUATION TESTS", "mvn test -Dtest=PriorityServiceTest", 6, "Category mapping and critical keyword rules tested.");
-                case "7" -> displaySuiteExecution("SLA ENGINE TESTS", "mvn test -Dtest=SLAServiceTest", 10, "Target durations and exact boundary values (7h59m MET vs 8h01m VIOLATED) tested.");
-                case "8" -> displaySuiteExecution("VALIDATION & BOUNDARY TESTS", "mvn test -Dtest=UserValidatorTest,TicketValidatorTest", 65, "BVA [min-1, min, min+1, max-1, max, max+1] and parameterized tests passed.");
-                case "9" -> displaySuiteExecution("END-TO-END INTEGRATION TESTS", "mvn test -Dtest=FixFlowEndToEndIntegrationTest", 1, "Full 10-step lifecycle workflow verified end-to-end.");
-                case "10" -> displaySuiteExecution("REGRESSION TESTS", "mvn test -Dtest=RegressionTest", 4, "Defensive copying, case-insensitive collision, and closed ticket checks passed.");
-                case "11" -> handleRunNegativeScenarios();
-                case "12" -> displayTestingSummary();
-                case "13" -> inTestingCenter = false;
-                default -> System.out.println("\n[ERROR] Invalid option. Please select 1-13.");
-            }
-        }
-    }
-
-    private void displaySuiteExecution(String suiteName, String command, int testCount, String details) {
-        System.out.println("\n========================================");
-        System.out.println("  EXECUTING: " + suiteName);
-        System.out.println("========================================");
-        System.out.println("Executing Maven Test Command: " + command);
-        System.out.println("Total Tests in Suite : " + testCount);
-        System.out.println("Passed               : " + testCount);
-        System.out.println("Failed               : 0");
-        System.out.println("Errors               : 0");
-        System.out.println("Status               : PASS (100% Pass Rate)");
-        System.out.println("Details              : " + details);
-    }
-
-    private void handleRunNegativeScenarios() {
-        System.out.println("\n========================================");
-        System.out.println("    LIVE EXECUTABLE NEGATIVE SCENARIOS   ");
-        System.out.println("========================================");
-        System.out.println("Executing real FixFlow services to verify strict exception handling...\n");
-
-        List<NegativeTestScenarioResult> results = testingCenterService.runNegativeScenarios();
-        int passCount = 0;
-
-        for (NegativeTestScenarioResult r : results) {
-            System.out.println("----------------------------------------");
-            System.out.println(r.id());
-            System.out.println(r.title());
-            System.out.println("\nDescription:\n" + r.description());
-            System.out.println("\nExpected:\n" + r.expectedResult());
-            System.out.println("\nActual:\n" + r.actualResult());
-            System.out.println("\nResult:\n" + (r.passed() ? "PASS" : "FAIL"));
-            System.out.println("----------------------------------------\n");
-
-            if (r.passed()) {
-                passCount++;
-            }
-        }
-
-        System.out.println("Negative Testing Summary: " + passCount + "/" + results.size() + " Scenarios Passed (100%).");
-    }
-
-    private void displayTestingSummary() {
-        System.out.println("\n========================================");
-        System.out.println("          TESTING SUMMARY               ");
-        System.out.println("========================================");
-        System.out.println("Last Maven Test Run Results");
-        System.out.println("----------------------------------------");
-        System.out.println("Total Tests       : 193");
-        System.out.println("Passed            : 193");
-        System.out.println("Failed            : 0");
-        System.out.println("Errors            : 0");
-        System.out.println("Skipped           : 0");
-        System.out.println("Pass Rate         : 100%");
-        System.out.println("\nTest Categories");
-        System.out.println("----------------------------------------");
-        System.out.println("Unit Testing          : PASS (104 Tests)");
-        System.out.println("Integration Testing   : PASS (1 Test - 10 Steps)");
-        System.out.println("Regression Testing    : PASS (4 Tests)");
-        System.out.println("Validation Testing    : PASS (65 Tests)");
-        System.out.println("Security Testing      : PASS (16 Tests)");
-        System.out.println("Boundary Testing      : PASS (32 Tests)");
-        System.out.println("Negative Testing      : PASS (10 Real Live Scenarios)");
-        System.out.println("\nOverall Status: SYSTEM TESTING PASSED");
-        System.out.println("Command to re-run full test suite: mvn clean test\n");
-
-        System.out.println("Representative QA Test Cases Viewer:");
-        System.out.println("  TC-001 | Valid User Login              | Positive  | Login succeeds with User instance");
-        System.out.println("  TC-002 | Invalid Password               | Negative  | AuthenticationException thrown");
-        System.out.println("  TC-003 | Duplicate Username            | Negative  | UserAlreadyExistsException thrown");
-        System.out.println("  TC-004 | Empty Ticket Title             | Boundary  | ValidationException thrown (min=3)");
-        System.out.println("  TC-005 | Invalid Status Transition      | Negative  | InvalidTicketStatusException thrown");
-        System.out.println("  TC-006 | Inactive Tech Assignment       | Negative  | ValidationException thrown");
-        System.out.println("  TC-007 | SLA Boundary (7h59m vs 8h01m)  | Boundary  | 7h59m=MET, 8h01m=VIOLATED");
-        System.out.println("  TC-008 | Invalid Feedback Rating        | Boundary  | ValidationException for rating < 1 or > 5");
+    private void handleProfileAndSettings() {
+        profileSettingsView.renderProfile(currentUser);
+        profileSettingsView.renderSettings(currentUser);
     }
 
     // =========================================================================
@@ -742,7 +609,7 @@ public class FixFlowApp {
         SystemSummaryReport report = reportService.generateSummaryReport();
         System.out.println("    +-------------------------------------------------------------+");
         System.out.println("    |               EXECUTIVE SYSTEM SUMMARY REPORT               |");
-        System.out.println("+-------------------------------------------------------------+");
+        System.out.println("    +-------------------------------------------------------------+");
         System.out.printf("    | Total Tickets Managed:        %-29d |\n", report.totalTickets());
         System.out.printf("    | Open Tickets:                 %-29d |\n", report.openTickets());
         System.out.printf("    | In Progress Tickets:          %-29d |\n", report.inProgressTickets());

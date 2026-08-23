@@ -7,8 +7,8 @@ import com.fixflow.model.TicketStatus;
 import com.fixflow.model.User;
 
 /**
- * Enterprise Visual Identity, ANSI Color System, ASCII Typography,
- * Status Badges, and Box-Drawing Components for FixFlow.
+ * Enterprise Visual Identity, ANSI Color System, Status Badges,
+ * and Box-Drawing Components for FixFlow.
  */
 public final class ConsoleTheme {
 
@@ -35,23 +35,11 @@ public final class ConsoleTheme {
     public static final String DIVIDER_SINGLE = "--------------------------------------------------------------------------------";
     public static final String DIVIDER_SUBTLE = "................................................................................";
 
-    /**
-     * FixFlow stylized ASCII Brand Logo matching the official graphic identity
-     * (Flow arrow, wrench, gear, and modern brand typography).
-     */
-    public static final String FIXFLOW_BRAND_LOGO =
-            """
-                     .---.            _____ _      ______ _               \s
-                    /     \\  /\\      |  ___(_)     |  ___| |              \s
-                   | () () |/_ \\     | |_   ___  __| |_  | | _____      __\s
-                    \\  ^  / / \\ \\    |  _| | \\ \\/ /|  _| | |/ _ \\ \\ /\\ / /\s
-                     '---'  \\_/ /    | |   | |>  < | |   | | (_) \\ V  V / \s
-                      /|___/\\ \\/     \\_|   |_/_/\\_\\\\_|   |_|\\___/ \\_/\\_/  \s
-                     /_/   \\_\\/      Smart Maintenance & Incident Management
-            """;
-
     public static void printBrandLogo() {
-        System.out.println(BRIGHT_CYAN + BOLD + FIXFLOW_BRAND_LOGO + RESET);
+        System.out.println(NAVY_BLUE + DIVIDER_SINGLE + RESET);
+        System.out.println("  " + BOLD + BRIGHT_CYAN + "FIXFLOW" + RESET + " — " + PURE_WHITE + BOLD + "Smart Maintenance & Incident Management System" + RESET);
+        System.out.println("  " + SLATE_GRAY + "Enterprise Operations Control & Automated SLA Surveillance" + RESET);
+        System.out.println(NAVY_BLUE + DIVIDER_SINGLE + RESET);
     }
 
     public static void printHeader(String title) {

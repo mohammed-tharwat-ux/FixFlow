@@ -6,15 +6,46 @@ import com.fixflow.model.TicketStatus;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
+import java.io.InputStream;
+
 /**
- * JavaFX Theme and Component Builder utilities for FixFlow.
+ * JavaFX Theme, Badge Factory, and High-Resolution Brand Asset Builder for FixFlow.
  */
 public final class FixFlowThemeFx {
 
+    private static Image cachedLogo = null;
+
     private FixFlowThemeFx() {
+    }
+
+    public static Image getBrandLogoImage() {
+        if (cachedLogo == null) {
+            try (InputStream in = FixFlowThemeFx.class.getResourceAsStream("/com/fixflow/ui/gui/logo.png")) {
+                if (in != null) {
+                    cachedLogo = new Image(in);
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return cachedLogo;
+    }
+
+    public static ImageView createBrandLogoView(double fitWidth, double fitHeight) {
+        Image img = getBrandLogoImage();
+        if (img != null && !img.isError()) {
+            ImageView view = new ImageView(img);
+            view.setPreserveRatio(true);
+            view.setSmooth(true);
+            if (fitWidth > 0) view.setFitWidth(fitWidth);
+            if (fitHeight > 0) view.setFitHeight(fitHeight);
+            return view;
+        }
+        return null;
     }
 
     public static Label createStatusBadge(TicketStatus status) {

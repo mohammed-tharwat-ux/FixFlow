@@ -16,8 +16,8 @@ import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.Separator;
 import javafx.scene.control.TextField;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
@@ -53,22 +53,32 @@ public class AuthView extends StackPane {
     }
 
     private VBox buildLoginCard() {
-        VBox card = new VBox(14);
-        card.setAlignment(Pos.CENTER_LEFT);
-        card.setStyle("-fx-background-color: #ffffff; -fx-background-radius: 12px; -fx-padding: 32px; -fx-border-color: #e2e8f0; -fx-border-radius: 12px;");
+        VBox card = new VBox(12);
+        card.setAlignment(Pos.CENTER);
+        card.setStyle("-fx-background-color: #ffffff; -fx-background-radius: 12px; -fx-padding: 28px 32px; -fx-border-color: #e2e8f0; -fx-border-radius: 12px;");
         card.setMaxWidth(420);
 
-        Label brandTitle = new Label("FixFlow");
-        brandTitle.getStyleClass().add("text-header-1");
-        brandTitle.setStyle("-fx-text-fill: #0284c7; -fx-font-weight: bold;");
+        ImageView logoView = FixFlowThemeFx.createBrandLogoView(200, 70);
+        if (logoView != null) {
+            card.getChildren().add(logoView);
+        } else {
+            Label brandTitle = new Label("FixFlow");
+            brandTitle.getStyleClass().add("text-header-1");
+            brandTitle.setStyle("-fx-text-fill: #0284c7; -fx-font-weight: bold;");
+            card.getChildren().add(brandTitle);
+        }
 
         Label subTitle = new Label("Sign in to your maintenance portal account");
         subTitle.getStyleClass().add("text-muted");
+        card.getChildren().add(subTitle);
 
         Label errorLabel = new Label();
         errorLabel.getStyleClass().add("error-label");
         errorLabel.setWrapText(true);
         errorLabel.setVisible(false);
+
+        VBox formBox = new VBox(10);
+        formBox.setAlignment(Pos.CENTER_LEFT);
 
         Label userLbl = new Label("Username");
         userLbl.getStyleClass().add("form-label");
@@ -97,12 +107,16 @@ public class AuthView extends StackPane {
             }
         });
 
+        formBox.getChildren().addAll(userLbl, userField, passLbl, passField, loginBtn);
+
         // Quick Demo Fill Shortcuts
         VBox demoBox = new VBox(6);
+        demoBox.setAlignment(Pos.CENTER_LEFT);
         Label quickLbl = new Label("Quick Demo Credentials:");
         quickLbl.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b; -fx-font-weight: bold;");
 
         HBox demoButtons = new HBox(8);
+        demoButtons.setAlignment(Pos.CENTER_LEFT);
         Button adminBtn = new Button("Admin");
         adminBtn.setStyle("-fx-font-size: 11px; -fx-padding: 4px 8px; -fx-background-color: #e0f2fe; -fx-text-fill: #0369a1; -fx-font-weight: bold; -fx-cursor: hand;");
         adminBtn.setOnAction(e -> {
@@ -110,7 +124,7 @@ public class AuthView extends StackPane {
             passField.setText(DemoDataLoader.DEFAULT_PASSWORD);
         });
 
-        Button techBtn = new Button("Technician (Bob)");
+        Button techBtn = new Button("Tech (Bob)");
         techBtn.setStyle("-fx-font-size: 11px; -fx-padding: 4px 8px; -fx-background-color: #fef3c7; -fx-text-fill: #b45309; -fx-font-weight: bold; -fx-cursor: hand;");
         techBtn.setOnAction(e -> {
             userField.setText("tech_bob");
@@ -137,10 +151,8 @@ public class AuthView extends StackPane {
         linkBox.getChildren().add(regLink);
 
         card.getChildren().addAll(
-                brandTitle, subTitle, errorLabel,
-                userLbl, userField,
-                passLbl, passField,
-                loginBtn,
+                errorLabel,
+                formBox,
                 new Separator(),
                 demoBox,
                 linkBox
@@ -149,9 +161,9 @@ public class AuthView extends StackPane {
     }
 
     private VBox buildRegisterCard() {
-        VBox card = new VBox(12);
+        VBox card = new VBox(11);
         card.setAlignment(Pos.CENTER_LEFT);
-        card.setStyle("-fx-background-color: #ffffff; -fx-background-radius: 12px; -fx-padding: 28px; -fx-border-color: #e2e8f0; -fx-border-radius: 12px;");
+        card.setStyle("-fx-background-color: #ffffff; -fx-background-radius: 12px; -fx-padding: 26px 30px; -fx-border-color: #e2e8f0; -fx-border-radius: 12px;");
         card.setMaxWidth(440);
 
         Label brandTitle = new Label("Create Account");
@@ -184,7 +196,7 @@ public class AuthView extends StackPane {
         Label passLbl = new Label("Password");
         passLbl.getStyleClass().add("form-label");
         PasswordField passField = new PasswordField();
-        passField.setPromptText("8 - 64 characters with 1 upper, 1 lower, 1 digit, 1 special");
+        passField.setPromptText("8 - 64 characters with upper, lower, digit, special");
 
         Label confirmLbl = new Label("Confirm Password");
         confirmLbl.getStyleClass().add("form-label");
@@ -209,7 +221,6 @@ public class AuthView extends StackPane {
                         passField.getText(),
                         Role.USER
                 );
-                // Auto-login on success
                 onLoginSuccess.accept(registered);
             } catch (ValidationException | UserAlreadyExistsException ex) {
                 errorLabel.setText(ex.getMessage());

@@ -19,6 +19,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
@@ -85,13 +86,21 @@ public class MainShellView extends BorderPane {
         VBox sidebar = new VBox(10);
         sidebar.getStyleClass().add("sidebar");
 
-        // Brand
-        VBox brandBox = new VBox(2);
-        Label brandTitle = new Label("FixFlow");
-        brandTitle.getStyleClass().add("sidebar-brand-title");
-        Label brandSub = new Label("Smart Maintenance Platform");
-        brandSub.getStyleClass().add("sidebar-brand-sub");
-        brandBox.getChildren().addAll(brandTitle, brandSub);
+        // Brand Logo Box
+        VBox brandBox = new VBox(4);
+        brandBox.setAlignment(Pos.CENTER_LEFT);
+
+        ImageView logoView = FixFlowThemeFx.createBrandLogoView(160, 50);
+        if (logoView != null) {
+            brandBox.getChildren().add(logoView);
+        } else {
+            Label brandTitle = new Label("FixFlow");
+            brandTitle.getStyleClass().add("sidebar-brand-title");
+            Label brandSub = new Label("Smart Maintenance");
+            brandSub.getStyleClass().add("sidebar-brand-sub");
+            brandBox.getChildren().addAll(brandTitle, brandSub);
+        }
+
         sidebar.getChildren().addAll(brandBox, new Separator());
 
         // Nav Buttons
